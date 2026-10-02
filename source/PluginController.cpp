@@ -19,6 +19,11 @@ tresult PLUGIN_API PotatoNoiseController::initialize (FUnknown* context)
 	                         Vst::ParameterInfo::kCanAutomate, kParamAmplitudeId, 0,
 	                         STR16 ("Amp"));
 
+	// Default to plain vertical drag (up = increase, down = decrease) instead of VSTGUI's
+	// default circular drag-around-the-knob mode. Hosts that let the user pick a global knob
+	// mode may still override this later via IEditController2::setKnobMode.
+	setKnobMode (Vst::kLinearMode);
+
 	return kResultOk;
 }
 

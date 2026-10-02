@@ -7,6 +7,7 @@
 #include "vstgui/standalone/include/helpers/value.h"
 #include "vstgui/standalone/include/helpers/uidesc/modelbinding.h"
 #include "vstgui/standalone/include/helpers/windowlistener.h"
+#include "vstgui/lib/cframe.h"
 
 #include "RtAudio.h"
 
@@ -55,6 +56,12 @@ public:
 
 	void finishLaunching () override
 	{
+		// Default to plain vertical drag (up = increase, down = decrease) instead of VSTGUI's
+		// default circular drag-around-the-knob mode. The plug-in editor sets the equivalent
+		// (EditController::setKnobMode) separately - this CFrame-level default only applies to
+		// windows, like this one, that aren't backed by a VST3 IEditController.
+		CFrame::kDefaultKnobMode = kLinearMode;
+
 		if (!startAudio ())
 		{
 			IApplication::instance ().quit ();
@@ -78,7 +85,16 @@ public:
 		mWindow = UIDesc::makeWindow (config);
 		if (mWindow)
 		{
+			// Size the window from the editor template before showing it, then again right
+			// after. VSTGUI's macOS window uses a full-size content view (the title bar floats
+			// over the content), and while the window is still deferred its content layout rect
+			// doesn't yet exclude the title bar - so the sizing pass makeWindow() already did
+			// treats the template height as the *frame* height and the top of the UI ends up
+			// underneath the title bar. Re-applying the same size once the window is on screen
+			// makes VSTGUI add the title bar height on top of it.
+			const auto editorSize = mWindow->getSize ();
 			mWindow->show ();
+			mWindow->setSize (editorSize);
 			mWindow->registerWindowListener (this);
 		}
 		else
